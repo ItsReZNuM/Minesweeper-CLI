@@ -30,10 +30,11 @@ console = Console()
 
 
 def render_header(theme: Theme) -> Panel:
-    """Render top application banner."""
+    """Render top application banner with version."""
     text = Text()
     text.append("💣 ", style="bold red")
     text.append(APP_NAME.upper(), style=f"bold {theme.accent_style}")
+    text.append(f"  v{__version__}", style="bold bright_yellow")
     text.append(" 💣", style="bold red")
     return Panel(
         Align.center(text),

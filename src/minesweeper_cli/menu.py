@@ -9,6 +9,7 @@ from rich.align import Align
 from rich.prompt import Prompt, Confirm
 from rich.box import SQUARE, ROUNDED, DOUBLE
 
+from minesweeper_cli import __version__
 from minesweeper_cli.config import (
     APP_NAME,
     DIFFICULTIES,
@@ -88,8 +89,8 @@ class MenuController:
 
                 panel = Panel(
                     Align.center(table),
-                    title=f"[bold {self.theme.accent_style}]Main Menu[/]",
-                    subtitle="[dim]Use [W/S] or [Up/Down] to navigate • [Enter] to select • [1-7] Direct[/dim]",
+                    title=f"[bold {self.theme.accent_style}]Main Menu (v{__version__})[/]",
+                    subtitle=f"[dim]v{__version__} • [W/S] or [Up/Down] Navigate • [Enter] Select • [1-7] Direct[/dim]",
                     border_style=self.theme.border_style,
                     box=SQUARE,
                     padding=(1, 4),

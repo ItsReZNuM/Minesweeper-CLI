@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2026-09-19
+
+### Added
+- **Application Version Display**: Added live application version badge (`v0.2.4`) to the global header banner across all screens and the Main Menu title/subtitle for clear version visibility.
+
 ## [0.2.3] - 2026-09-19
 
 ### Fixed
