@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reznum-minesweeper"
-version = "0.2.4"
+version = "0.2.5"
 description = "A modern, beautiful, and interactive terminal Minesweeper game written in Python with Rich."
 readme = "README.md"
 authors = [

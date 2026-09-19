@@ -26,7 +26,7 @@ from minesweeper_cli.config import (
 from minesweeper_cli.themes import Theme, get_theme
 from minesweeper_cli.timer import GameTimer
 
-console = Console()
+console = Console(legacy_windows=False)
 
 
 def render_header(theme: Theme) -> Panel:

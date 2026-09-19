@@ -50,9 +50,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-from rich.console import Console
-
-console = Console()
+from minesweeper_cli.renderer import console
 
 
 def main(argv: Optional[List[str]] = None) -> int:

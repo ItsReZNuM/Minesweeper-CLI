@@ -1,7 +1,8 @@
 """Main menu, settings manager, custom board configuration, and navigation."""
 
 from typing import List, Optional, Tuple
-from rich.console import Console, Group
+from rich.console import Group
+from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -29,14 +30,13 @@ from minesweeper_cli.game import GameSession
 from minesweeper_cli.platform_compat import InputReader
 from minesweeper_cli.records import RecordsManager
 from minesweeper_cli.renderer import (
+    console,
     render_header,
     render_about,
     render_how_to_play,
 )
 from minesweeper_cli.settings import SettingsManager
 from minesweeper_cli.themes import THEMES, get_theme
-
-console = Console()
 
 
 class MenuController:
@@ -56,8 +56,8 @@ class MenuController:
     def theme(self):
         return get_theme(self.settings_mgr.settings.theme)
 
-    def run(self) -> None:
-        """Main loop displaying the top-level menu."""
+    def _build_main_menu(self, selected_idx: int) -> Group:
+        """Construct renderable Group for the main menu."""
         menu_items = [
             "Start Game",
             "Custom Game",
@@ -67,54 +67,64 @@ class MenuController:
             "About the Creator",
             "Exit",
         ]
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_column(justify="left")
+
+        for i, item in enumerate(menu_items):
+            prefix = "▶ " if i == selected_idx else "  "
+            num_str = f"[{i + 1}] "
+            line = Text()
+            line.append(prefix, style=f"bold {self.theme.accent_style}")
+            line.append(num_str, style="dim")
+            line.append(item, style=self.theme.menu_selected if i == selected_idx else self.theme.menu_normal)
+            table.add_row(line)
+
+        panel = Panel(
+            Align.center(table),
+            title=f"[bold {self.theme.accent_style}]Main Menu (v{__version__})[/]",
+            subtitle=f"[dim]v{__version__} • [W/S] or [Up/Down] Navigate • [Enter] Select • [1-7] Direct[/dim]",
+            border_style=self.theme.border_style,
+            box=SQUARE,
+            padding=(1, 4),
+        )
+        return Group(render_header(self.theme), panel)
+
+    def run(self) -> None:
+        """Main loop displaying the top-level menu with in-place rendering."""
+        menu_items_count = 7
         selected_idx = 0
 
+        console.clear()
+        console.show_cursor(False)
         try:
-            while True:
-                console.clear()
-                console.print(render_header(self.theme))
+            with Live(self._build_main_menu(selected_idx), console=console, auto_refresh=False, transient=False) as live:
+                while True:
+                    live.update(self._build_main_menu(selected_idx), refresh=True)
+                    key = self.reader.read_key("Select [1-7 or Enter] > ")
 
-                # Render styled menu panel
-                table = Table(show_header=False, box=None, padding=(0, 2))
-                table.add_column(justify="left")
-
-                for i, item in enumerate(menu_items):
-                    prefix = "▶ " if i == selected_idx else "  "
-                    num_str = f"[{i + 1}] "
-                    line = Text()
-                    line.append(prefix, style=f"bold {self.theme.accent_style}")
-                    line.append(num_str, style="dim")
-                    line.append(item, style=self.theme.menu_selected if i == selected_idx else self.theme.menu_normal)
-                    table.add_row(line)
-
-                panel = Panel(
-                    Align.center(table),
-                    title=f"[bold {self.theme.accent_style}]Main Menu (v{__version__})[/]",
-                    subtitle=f"[dim]v{__version__} • [W/S] or [Up/Down] Navigate • [Enter] Select • [1-7] Direct[/dim]",
-                    border_style=self.theme.border_style,
-                    box=SQUARE,
-                    padding=(1, 4),
-                )
-                console.print(panel)
-
-                key = self.reader.read_key("Select [1-7 or Enter] > ")
-
-                # Navigation
-                if key in ("w", "up"):
-                    selected_idx = (selected_idx - 1) % len(menu_items)
-                elif key in ("s", "down"):
-                    selected_idx = (selected_idx + 1) % len(menu_items)
-                elif key.isdigit() and 1 <= int(key) <= len(menu_items):
-                    selected_idx = int(key) - 1
-                    if self._execute_menu_choice(selected_idx):
+                    # Navigation
+                    if key in ("w", "up"):
+                        selected_idx = (selected_idx - 1) % menu_items_count
+                    elif key in ("s", "down"):
+                        selected_idx = (selected_idx + 1) % menu_items_count
+                    elif key.isdigit() and 1 <= int(key) <= menu_items_count:
+                        selected_idx = int(key) - 1
+                        live.stop()
+                        if self._execute_menu_choice(selected_idx):
+                            break
+                        console.clear()
+                        live.start()
+                    elif key in ("enter", "space"):
+                        live.stop()
+                        if self._execute_menu_choice(selected_idx):
+                            break
+                        console.clear()
+                        live.start()
+                    elif key in ("q", "escape"):
                         break
-                elif key in ("enter", "space"):
-                    if self._execute_menu_choice(selected_idx):
-                        break
-                elif key in ("q", "escape"):
-                    break
         finally:
             console.clear()
+            console.show_cursor(True)
 
     def _execute_menu_choice(self, index: int) -> bool:
         """Dispatch action for selected main menu option. Returns True if exiting."""
@@ -134,68 +144,80 @@ class MenuController:
             return True
         return False
 
+    def _build_difficulty_menu(self, selected: int) -> Group:
+        """Construct renderable Group for difficulty selection menu."""
+        diff_keys = list(DIFFICULTIES.keys())
+        options = [DIFFICULTIES[k] for k in diff_keys]
+
+        table = Table(show_header=False, box=None, padding=(0, 2))
+        table.add_column()
+
+        for i, diff in enumerate(options):
+            prefix = "▶ " if i == selected else "  "
+            line = Text()
+            line.append(prefix, style=f"bold {self.theme.accent_style}")
+            line.append(f"[{i + 1}] ", style="dim")
+            line.append(f"{diff.name:<8} ", style=self.theme.menu_selected if i == selected else "bold white")
+            line.append(f"({diff.width}x{diff.height}, {diff.mines} mines) - {diff.description}", style="dim")
+            table.add_row(line)
+
+        # Back option
+        back_idx = len(options)
+        prefix = "▶ " if selected == back_idx else "  "
+        b_line = Text()
+        b_line.append(prefix, style=f"bold {self.theme.accent_style}")
+        b_line.append(f"[{back_idx + 1}] Back to Main Menu", style=self.theme.menu_selected if selected == back_idx else "dim")
+        table.add_row(b_line)
+
+        panel = Panel(
+            Align.center(table),
+            title=f"[bold {self.theme.accent_style}]Select Difficulty[/]",
+            subtitle="[dim]Navigate: [W/S] or [Up/Down] • Select: [Enter][/dim]",
+            border_style=self.theme.border_style,
+            box=SQUARE,
+            padding=(1, 4),
+        )
+        return Group(render_header(self.theme), panel)
+
     def menu_difficulty(self) -> None:
-        """Prompt user to select a predefined difficulty preset."""
+        """Prompt user to select a predefined difficulty preset with in-place rendering."""
         diff_keys = list(DIFFICULTIES.keys())
         options = [DIFFICULTIES[k] for k in diff_keys]
         selected = 0
+        total_choices = len(options) + 1
 
-        while True:
+        console.clear()
+        console.show_cursor(False)
+        try:
+            with Live(self._build_difficulty_menu(selected), console=console, auto_refresh=False, transient=False) as live:
+                while True:
+                    live.update(self._build_difficulty_menu(selected), refresh=True)
+                    key = self.reader.read_key("Choice > ")
+
+                    if key in ("w", "up"):
+                        selected = (selected - 1) % total_choices
+                    elif key in ("s", "down"):
+                        selected = (selected + 1) % total_choices
+                    elif key.isdigit() and 1 <= int(key) <= total_choices:
+                        selected = int(key) - 1
+                        if selected == len(options):
+                            return
+                        chosen = options[selected]
+                        live.stop()
+                        self.launch_game(chosen.width, chosen.height, chosen.mines, chosen.name)
+                        return
+                    elif key in ("enter", "space"):
+                        if selected == len(options):
+                            return
+                        chosen = options[selected]
+                        live.stop()
+                        self.launch_game(chosen.width, chosen.height, chosen.mines, chosen.name)
+                        return
+                    elif key in ("q", "escape"):
+                        return
+        finally:
             console.clear()
-            console.print(render_header(self.theme))
-
-            table = Table(show_header=False, box=None, padding=(0, 2))
-            table.add_column()
-
-            for i, diff in enumerate(options):
-                prefix = "▶ " if i == selected else "  "
-                line = Text()
-                line.append(prefix, style=f"bold {self.theme.accent_style}")
-                line.append(f"[{i + 1}] ", style="dim")
-                line.append(f"{diff.name:<8} ", style=self.theme.menu_selected if i == selected else "bold white")
-                line.append(f"({diff.width}x{diff.height}, {diff.mines} mines) - {diff.description}", style="dim")
-                table.add_row(line)
-
-            # Back option
-            back_idx = len(options)
-            prefix = "▶ " if selected == back_idx else "  "
-            b_line = Text()
-            b_line.append(prefix, style=f"bold {self.theme.accent_style}")
-            b_line.append(f"[{back_idx + 1}] Back to Main Menu", style=self.theme.menu_selected if selected == back_idx else "dim")
-            table.add_row(b_line)
-
-            panel = Panel(
-                Align.center(table),
-                title=f"[bold {self.theme.accent_style}]Select Difficulty[/]",
-                subtitle="[dim]Navigate: [W/S] or [Up/Down] • Select: [Enter][/dim]",
-                border_style=self.theme.border_style,
-                box=SQUARE,
-                padding=(1, 4),
-            )
-            console.print(panel)
-
-            key = self.reader.read_key("Choice > ")
-            total_choices = len(options) + 1
-
-            if key in ("w", "up"):
-                selected = (selected - 1) % total_choices
-            elif key in ("s", "down"):
-                selected = (selected + 1) % total_choices
-            elif key.isdigit() and 1 <= int(key) <= total_choices:
-                selected = int(key) - 1
-                if selected == len(options):
-                    return
-                chosen = options[selected]
-                self.launch_game(chosen.width, chosen.height, chosen.mines, chosen.name)
-                return
-            elif key in ("enter", "space"):
-                if selected == len(options):
-                    return
-                chosen = options[selected]
-                self.launch_game(chosen.width, chosen.height, chosen.mines, chosen.name)
-                return
-            elif key in ("q", "escape"):
-                return
+            console.show_cursor(True)
 
     def menu_custom_game(self) -> None:
         """Prompt and validate custom board dimensions."""

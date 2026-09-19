@@ -123,3 +123,23 @@ def test_cell_constant_width():
         c_cur = format_cell_content(char, is_cursor=True, compact=True, style="", cursor_style="")
         assert cell_len(c_norm.plain) == 2
         assert cell_len(c_cur.plain) == 2
+
+
+def test_game_build_renderable(tmp_path: Path):
+    """Verify _build_renderable produces valid Rich Group renderable without crashing."""
+    from rich.console import Group
+    storage = StorageManager(custom_dir=tmp_path)
+    s_mgr = SettingsManager(storage=storage)
+    r_mgr = RecordsManager(storage=storage)
+
+    session = GameSession(
+        width=5,
+        height=5,
+        num_mines=3,
+        mode_name="Easy",
+        settings=s_mgr.settings,
+        records=r_mgr,
+    )
+    renderable = session._build_renderable()
+    assert isinstance(renderable, Group)
+    assert len(renderable.renderables) == 3
