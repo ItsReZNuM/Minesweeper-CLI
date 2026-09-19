@@ -68,49 +68,52 @@ class MenuController:
         ]
         selected_idx = 0
 
-        while True:
+        try:
+            while True:
+                console.clear()
+                console.print(render_header(self.theme))
+
+                # Render styled menu panel
+                table = Table(show_header=False, box=None, padding=(0, 2))
+                table.add_column(justify="left")
+
+                for i, item in enumerate(menu_items):
+                    prefix = "▶ " if i == selected_idx else "  "
+                    num_str = f"[{i + 1}] "
+                    line = Text()
+                    line.append(prefix, style=f"bold {self.theme.accent_style}")
+                    line.append(num_str, style="dim")
+                    line.append(item, style=self.theme.menu_selected if i == selected_idx else self.theme.menu_normal)
+                    table.add_row(line)
+
+                panel = Panel(
+                    Align.center(table),
+                    title=f"[bold {self.theme.accent_style}]Main Menu[/]",
+                    subtitle="[dim]Use [W/S] or [Up/Down] to navigate • [Enter] to select • [1-7] Direct[/dim]",
+                    border_style=self.theme.border_style,
+                    box=SQUARE,
+                    padding=(1, 4),
+                )
+                console.print(panel)
+
+                key = self.reader.read_key("Select [1-7 or Enter] > ")
+
+                # Navigation
+                if key in ("w", "up"):
+                    selected_idx = (selected_idx - 1) % len(menu_items)
+                elif key in ("s", "down"):
+                    selected_idx = (selected_idx + 1) % len(menu_items)
+                elif key.isdigit() and 1 <= int(key) <= len(menu_items):
+                    selected_idx = int(key) - 1
+                    if self._execute_menu_choice(selected_idx):
+                        break
+                elif key in ("enter", "space"):
+                    if self._execute_menu_choice(selected_idx):
+                        break
+                elif key in ("q", "escape"):
+                    break
+        finally:
             console.clear()
-            console.print(render_header(self.theme))
-
-            # Render styled menu panel
-            table = Table(show_header=False, box=None, padding=(0, 2))
-            table.add_column(justify="left")
-
-            for i, item in enumerate(menu_items):
-                prefix = "▶ " if i == selected_idx else "  "
-                num_str = f"[{i + 1}] "
-                line = Text()
-                line.append(prefix, style=f"bold {self.theme.accent_style}")
-                line.append(num_str, style="dim")
-                line.append(item, style=self.theme.menu_selected if i == selected_idx else self.theme.menu_normal)
-                table.add_row(line)
-
-            panel = Panel(
-                Align.center(table),
-                title=f"[bold {self.theme.accent_style}]Main Menu[/]",
-                subtitle="[dim]Use [W/S] or [Up/Down] to navigate • [Enter] to select • [1-7] Direct[/dim]",
-                border_style=self.theme.border_style,
-                box=SQUARE,
-                padding=(1, 4),
-            )
-            console.print(panel)
-
-            key = self.reader.read_key("Select [1-7 or Enter] > ")
-
-            # Navigation
-            if key in ("w", "up"):
-                selected_idx = (selected_idx - 1) % len(menu_items)
-            elif key in ("s", "down"):
-                selected_idx = (selected_idx + 1) % len(menu_items)
-            elif key.isdigit() and 1 <= int(key) <= len(menu_items):
-                selected_idx = int(key) - 1
-                if self._execute_menu_choice(selected_idx):
-                    break
-            elif key in ("enter", "space"):
-                if self._execute_menu_choice(selected_idx):
-                    break
-            elif key in ("q", "escape"):
-                break
 
     def _execute_menu_choice(self, index: int) -> bool:
         """Dispatch action for selected main menu option. Returns True if exiting."""

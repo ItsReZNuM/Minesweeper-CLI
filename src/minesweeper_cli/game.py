@@ -155,61 +155,64 @@ class GameSession:
 
     def run(self) -> None:
         """Run interactive game loop until player wins, loses, or quits to menu."""
-        while True:
-            self._draw_frame()
+        try:
+            while True:
+                self._draw_frame()
 
-            # If game is finished, display end panel and await replay/menu decision
-            if self.board.status in (GameStatus.WON, GameStatus.LOST):
-                if self.board.status == GameStatus.WON:
-                    console.print(render_victory(self.timer, self.theme, self.is_new_best))
+                # If game is finished, display end panel and await replay/menu decision
+                if self.board.status in (GameStatus.WON, GameStatus.LOST):
+                    if self.board.status == GameStatus.WON:
+                        console.print(render_victory(self.timer, self.theme, self.is_new_best))
+                    else:
+                        console.print(render_game_over(self.theme))
+
+                    key = self.reader.read_key("Choice [R/M/Q] > ")
+                    if key in ("r", "restart"):
+                        self.board = Board(self.width, self.height, self.num_mines)
+                        self.timer.reset()
+                        self.cursor_x = self.width // 2
+                        self.cursor_y = self.height // 2
+                        self.is_new_best = False
+                        continue
+                    break
+
+                # Read user input
+                raw_input = self.reader.read_key("Action > " if self.reader.fallback_mode else "")
+
+                if self.reader.fallback_mode:
+                    action = self._handle_fallback_command(raw_input)
                 else:
-                    console.print(render_game_over(self.theme))
+                    action = get_action_for_key(raw_input, self.settings.key_bindings)
 
-                key = self.reader.read_key("Choice [R/M/Q] > ")
-                if key in ("r", "restart"):
+                if action == ACTION_QUIT:
+                    break
+                elif action == ACTION_RESTART:
                     self.board = Board(self.width, self.height, self.num_mines)
                     self.timer.reset()
                     self.cursor_x = self.width // 2
                     self.cursor_y = self.height // 2
                     self.is_new_best = False
-                    continue
-                break
-
-            # Read user input
-            raw_input = self.reader.read_key("Action > " if self.reader.fallback_mode else "")
-
-            if self.reader.fallback_mode:
-                action = self._handle_fallback_command(raw_input)
-            else:
-                action = get_action_for_key(raw_input, self.settings.key_bindings)
-
-            if action == ACTION_QUIT:
-                break
-            elif action == ACTION_RESTART:
-                self.board = Board(self.width, self.height, self.num_mines)
-                self.timer.reset()
-                self.cursor_x = self.width // 2
-                self.cursor_y = self.height // 2
-                self.is_new_best = False
-            elif action == ACTION_UP:
-                self.cursor_y = max(0, self.cursor_y - 1)
-            elif action == ACTION_DOWN:
-                self.cursor_y = min(self.height - 1, self.cursor_y + 1)
-            elif action == ACTION_LEFT:
-                self.cursor_x = max(0, self.cursor_x - 1)
-            elif action == ACTION_RIGHT:
-                self.cursor_x = min(self.width - 1, self.cursor_x + 1)
-            elif action == ACTION_FLAG:
-                self.board.toggle_flag(self.cursor_x, self.cursor_y)
-            elif action == ACTION_REVEAL:
-                if self.board.status == GameStatus.READY:
-                    self.timer.start()
-                self.board.reveal(self.cursor_x, self.cursor_y)
-                self._check_game_end()
-            elif action == ACTION_CHORD:
-                if self.board.status == GameStatus.PLAYING:
-                    self.board.chord_reveal(self.cursor_x, self.cursor_y)
+                elif action == ACTION_UP:
+                    self.cursor_y = max(0, self.cursor_y - 1)
+                elif action == ACTION_DOWN:
+                    self.cursor_y = min(self.height - 1, self.cursor_y + 1)
+                elif action == ACTION_LEFT:
+                    self.cursor_x = max(0, self.cursor_x - 1)
+                elif action == ACTION_RIGHT:
+                    self.cursor_x = min(self.width - 1, self.cursor_x + 1)
+                elif action == ACTION_FLAG:
+                    self.board.toggle_flag(self.cursor_x, self.cursor_y)
+                elif action == ACTION_REVEAL:
+                    if self.board.status == GameStatus.READY:
+                        self.timer.start()
+                    self.board.reveal(self.cursor_x, self.cursor_y)
                     self._check_game_end()
+                elif action == ACTION_CHORD:
+                    if self.board.status == GameStatus.PLAYING:
+                        self.board.chord_reveal(self.cursor_x, self.cursor_y)
+                        self._check_game_end()
+        finally:
+            console.clear()
 
     def _check_game_end(self) -> None:
         """Handle end-of-game transitions and persistence."""

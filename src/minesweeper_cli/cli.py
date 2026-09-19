@@ -50,8 +50,19 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+from rich.console import Console
+
+console = Console()
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """CLI execution entrypoint."""
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     parser = create_parser()
     args = parser.parse_args(argv)
 
@@ -76,8 +87,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             menu.run()
             return 0
     except KeyboardInterrupt:
-        sys.stdout.write("\nThanks for playing Minesweeper CLI!\n")
         return 0
+    finally:
+        console.clear()
+        console.show_cursor(True)
 
 
 if __name__ == "__main__":

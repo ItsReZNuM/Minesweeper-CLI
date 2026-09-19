@@ -24,10 +24,10 @@ class Theme:
     exploded_style: str
     wrong_flag_style: str
     number_styles: Dict[int, str]
-    flag_symbol: str = "🚩"
-    mine_symbol: str = "💣"
-    exploded_symbol: str = "💥"
-    wrong_flag_symbol: str = "❌"
+    flag_symbol: str = "⚑"
+    mine_symbol: str = "*"
+    exploded_symbol: str = "!"
+    wrong_flag_symbol: str = "X"
     hidden_symbol: str = "■"
 
 

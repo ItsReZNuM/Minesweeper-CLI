@@ -10,6 +10,9 @@ from rich.align import Align
 from rich.rule import Rule
 from rich.box import SQUARE, ROUNDED, SIMPLE, DOUBLE
 
+from rich.cells import cell_len
+
+from minesweeper_cli import __version__
 from minesweeper_cli.board import Board, GameStatus
 from minesweeper_cli.config import (
     APP_NAME,
@@ -84,6 +87,42 @@ def render_status_bar(
     )
 
 
+def format_cell_content(
+    char: str,
+    is_cursor: bool,
+    compact: bool,
+    style: str,
+    cursor_style: str,
+) -> Text:
+    """Format cell text ensuring strict constant terminal display width across all states."""
+    target_width = 2 if compact else 3
+    c_len = cell_len(char)
+
+    if target_width == 3:
+        if c_len == 1:
+            if is_cursor:
+                return Text(f"[{char}]", style=cursor_style)
+            return Text(f" {char} ", style=style)
+        elif c_len == 2:
+            if is_cursor:
+                return Text(f">{char}", style=cursor_style)
+            return Text(f" {char}", style=style)
+        else:
+            s = char[:3]
+            return Text(s.center(3), style=cursor_style if is_cursor else style)
+    else:
+        # compact mode (width 2)
+        if c_len == 1:
+            if is_cursor:
+                return Text(f">{char}", style=cursor_style)
+            return Text(f" {char}", style=style)
+        elif c_len == 2:
+            return Text(char, style=cursor_style if is_cursor else style)
+        else:
+            s = char[:2]
+            return Text(s, style=cursor_style if is_cursor else style)
+
+
 def render_board(
     board: Board,
     cursor_x: int,
@@ -102,6 +141,7 @@ def render_board(
 
     visible_w = max_x - min_x
     visible_h = max_y - min_y
+    cell_width = 2 if compact else 3
 
     table = Table(
         show_header=False,
@@ -112,18 +152,20 @@ def render_board(
         collapse_padding=True,
     )
 
-    # Add coordinate column if enabled
+    # Add coordinate column with fixed width if enabled
     if show_coords:
-        table.add_column("row_num", justify="right", style="dim", no_wrap=True)
+        table.add_column("row_num", width=4, justify="right", style="dim", no_wrap=True)
 
+    # Add board columns with locked fixed width to prevent any cell expansion from shifting the board
     for _ in range(visible_w):
-        table.add_column(justify="center", no_wrap=True)
+        table.add_column(width=cell_width, justify="center", no_wrap=True)
 
     # Header row for column coordinates
     if show_coords:
-        header_cells = [Text("   ", style="dim")]
+        header_cells = [Text("   │", style="dim cyan")]
         for x in range(min_x, max_x):
-            header_cells.append(Text(f"{x % 100:2d} ", style="dim cyan"))
+            num_str = f"{x % 100:2d} " if not compact else f"{x % 100:2d}"
+            header_cells.append(Text(num_str, style="dim cyan"))
         table.add_row(*header_cells)
 
     for y in range(min_y, max_y):
@@ -134,11 +176,9 @@ def render_board(
         for x in range(min_x, max_x):
             cell = board.get_cell(x, y)
             is_cursor = (x == cursor_x and y == cursor_y)
-            cell_text = Text()
 
             if cell.is_flagged:
                 if board.status == GameStatus.LOST and not cell.is_mine:
-                    # Incorrect flag placement
                     char = theme.wrong_flag_symbol
                     style = theme.wrong_flag_style
                 else:
@@ -162,14 +202,13 @@ def render_board(
                 char = theme.hidden_symbol
                 style = theme.cell_hidden
 
-            # Format cell with cursor highlight
-            if is_cursor:
-                cursor_repr = f"[{char}]" if not compact else f">{char}<"
-                cell_text.append(cursor_repr, style=theme.cell_cursor)
-            else:
-                cell_repr = f" {char} " if not compact else f" {char}"
-                cell_text.append(cell_repr, style=style)
-
+            cell_text = format_cell_content(
+                char=char,
+                is_cursor=is_cursor,
+                compact=compact,
+                style=style,
+                cursor_style=theme.cell_cursor,
+            )
             row_items.append(cell_text)
 
         table.add_row(*row_items)
@@ -224,7 +263,7 @@ def render_about(theme: Theme) -> Panel:
     body.append("Author: ", style="bold white")
     body.append(f"{AUTHOR}\n", style="bold bright_cyan")
     body.append("Version: ", style="bold white")
-    body.append("v0.2.2\n", style="bold bright_yellow")
+    body.append(f"v{__version__}\n", style="bold bright_yellow")
     body.append("GitHub: ", style="bold white")
     body.append(f"{GITHUB_PROFILE.replace('https://', '')}\n", style="underline cyan")
     body.append("Repository: ", style="bold white")

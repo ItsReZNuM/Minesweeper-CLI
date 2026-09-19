@@ -103,3 +103,23 @@ def test_fallback_command_parsing(tmp_path: Path):
     assert act2 == "flag"
     assert session.cursor_x == 5
     assert session.cursor_y == 6
+
+
+def test_cell_constant_width():
+    """Ensure format_cell_content produces uniform terminal display widths."""
+    from rich.cells import cell_len
+    from minesweeper_cli.renderer import format_cell_content
+
+    test_chars = ["1", "■", " ", "⚑", "🚩", "*", "💣", "!", "💥", "X", "❌"]
+    for char in test_chars:
+        # Standard mode: must be strictly 3 columns
+        t_norm = format_cell_content(char, is_cursor=False, compact=False, style="", cursor_style="")
+        t_cur = format_cell_content(char, is_cursor=True, compact=False, style="", cursor_style="")
+        assert cell_len(t_norm.plain) == 3
+        assert cell_len(t_cur.plain) == 3
+
+        # Compact mode: must be strictly 2 columns
+        c_norm = format_cell_content(char, is_cursor=False, compact=True, style="", cursor_style="")
+        c_cur = format_cell_content(char, is_cursor=True, compact=True, style="", cursor_style="")
+        assert cell_len(c_norm.plain) == 2
+        assert cell_len(c_cur.plain) == 2
