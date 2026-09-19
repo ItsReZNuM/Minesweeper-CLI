@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include pyproject.toml
+recursive-include src/minesweeper_cli *.py py.typed
+recursive-include tests *.py
