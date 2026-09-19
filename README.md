@@ -1,5 +1,6 @@
 # Minesweeper CLI 💣
 
+[![PyPI Version](https://img.shields.io/pypi/v/reznum-minesweeper.svg)](https://pypi.org/project/reznum-minesweeper/)
 [![Tests & Lint](https://github.com/ItsReZNuM/Minesweeper-CLI/actions/workflows/tests.yml/badge.svg)](https://github.com/ItsReZNuM/Minesweeper-CLI/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
@@ -68,17 +69,14 @@ Or run via module execution without PATH modification:
 python -m minesweeper_cli
 ```
 
-### PyPI Installation (Future Release)
+### PyPI Installation
 
-Once published to PyPI:
+Install directly from PyPI:
 
 ```bash
-pip install minesweeper-cli
+pip install reznum-minesweeper
 minesweeper
 ```
-
-> [!NOTE]
-> **PyPI Namespace Advisory**: The package name `minesweeper-cli` is currently registered on PyPI (v1.0.3 by an independent third party). To publish to PyPI under this exact name, an ownership transfer request or PyPI PEP 541 claim is required. Alternatively, future releases may be distributed under a dedicated name such as `reznum-minesweeper` or `minesweeper-terminal`.
 
 ---
 
